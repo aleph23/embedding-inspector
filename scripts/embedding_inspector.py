@@ -1,7 +1,7 @@
 # Embedding Inspector extension for AUTOMATIC1111/stable-diffusion-webui
 #
 # https://github.com/tkalayci71/embedding-inspector
-# version 2.83 - 2023.01.13
+# version 3.0
 #
 
 import gradio as gr
