@@ -1,15 +1,18 @@
 import numpy as np
+from scripts import embedding_inspector
+from scripts.embedding_inspector import emb_id_to_name, get_data, text_to_emb_ids
 import torch
 import scipy
+
 from scipy.optimize import minimize
 from collections import OrderedDict
 import random, math, time, re, pickle, copy
 import json
 
 class EmbeddingGroupFinder:
-  
+
   WEIGHTS_AS_TENSOR = False	# Submit weights as a tensor to scipy.optimize.minimize (though we seem to just get a np array out  :Þ)
-  
+
   EMBEDDING_BASEDIR = "embeddings"
   EMB_LENGTH = 768
 #  DO_SORT = False
@@ -27,14 +30,14 @@ class EmbeddingGroupFinder:
   MAX_EMBS_PER_GROUP = 200
   OPT_SCALAR = 170
   USE_WEIGHT_PENALTY1 = False
-  USE_WEIGHT_PENALTY2 = False	
+  USE_WEIGHT_PENALTY2 = False
   SPECIFIC_GROUP_ODDS = 0.5	# Odds that, when using SAME or NEAR embeddings, that it comes from a specific best_emb_group.
   SAME_EMB_ODDS = 0.5		# Single-pass odds from the chosen best_emb_group (1.0 = guaranteed to repeat the previous-best embeddings)
   SAME2_EMB_ODDS = 0.7		# Same thing, but from any best_emb_group.
   NEAR_EMB_ODDS = 0.9		# Repeated odds (1.0 = will repeat a neighbor of a previous-best embedding over and over again ad infinitum - never use 1.0!)
   OPTIONAL_EMB_ODDS = 0.75	# Since this is also a while-loop breakout odds, never use 1.0!
   METHOD = "Powell"
-  
+
   START_OPTIMIZATION_EVALUATION = 60 * 20	# Wait this many seconds before starting to evaluate our optimization methodology's efficacy
   OPTIMIZATION_PRINT_FREQUENCY = 60 * 60 * 24 * 365	# Seconds
   SUCCESSIVE_OPTIMIZATION_RUNS = 30
@@ -42,18 +45,18 @@ class EmbeddingGroupFinder:
 
   RUNTIME = 60 * 60 * 24 * 365.24	# Seconds
   MAXITER = 10000000			# Count
-  
+
   BEST_EMB_GROUPS = 1000
   NEAREST_EMB_COUNT = 50
   PRINT_DURING_CALC = False
-  
+
 #  DEST_FILENAME = None
   REQUIRED_TOKENS_TEXT = []
   OPTIONAL_TOKENS_TEXT = []
 
   LOAD_ON_CPU = not torch.cuda.is_available()	# Load torch models on the CPU, in case the GPU is unavailable
   DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-  
+
   OPTIMIZATION_CHOICES = {
 #    "USE_SORT_WEIGHTINGS": [True, False],
 #    "MULTIPLIER_LIST": [[300,45,12,4,2.2,1.5,1.2,1], [100,20,7,3,2,1.5,1.2,1], [50,15,6,3,2,1.5,1.2,1], [20,7,3,2,1.5,1.2,1], [7,2.5,1.5,1.2,1], [3,1.5,1.2,1], [1]],
@@ -83,7 +86,7 @@ class EmbeddingGroupFinder:
 
   def get_outputs(self, *args):
     global MAX_NUM_MIX
-    
+
     if self.do_breakout:
       return args
     else:
@@ -95,19 +98,19 @@ class EmbeddingGroupFinder:
   def set_required(self, arg):
     self.REQUIRED_TOKENS_TEXT = [i.split(",") for i in arg.split(";")]
 
-    
+
   def set_optional(self, arg):
     self.OPTIONAL_TOKENS_TEXT = arg.split(";")
 
-    
+
   def set_count(self, arg):
     self.MAX_SIMILAR_EMBS = arg
 
-    
+
   def set_precache(self, arg):
     self.DO_PRECACHE = arg
 
-    
+
   def interrupt(self):
     self.do_interrupt = True
     self.textbox.change( + "\n\nInterrupt requested")
@@ -121,7 +124,7 @@ class EmbeddingGroupFinder:
   def save_near_emb_cache(self):
     with open(self.EMBEDDING_FILENAME + ".near", "wb") as outfile:
       pickle.dump(self.near_emb_cache, outfile)
-  
+
 
   def load_near_emb_cache(self):
     self.textbox += "Loading cached near embeddings (if present)...\n"
@@ -143,14 +146,14 @@ class EmbeddingGroupFinder:
 #
 #    with open("saved_state.minimize", "wb") as outfile:
 #      pickle.dump(save_keys, outfile)
-      
+
 
 #  do_resume = False
-#  
+#
 #  def resume(self):
 #    with open("saved_state.minimize", "rb") as infile:
 #      tmp_dict = pickle.load(infile)
-#    self.__dict__.update(tmp_dict) 
+#    self.__dict__.update(tmp_dict)
 #    try:
 #      self.load_embeddings(self.EMBEDDING_FILENAME)
 #      self.do_resume = True
@@ -169,7 +172,7 @@ class EmbeddingGroupFinder:
 #      solve_groups_tensor = torch.stack(best_emb_groups_list)
 #    else:
 #      return
-#      
+#
 #    match = re.match("^(.*/)(.+?)\.([^\./]+)$", self.DEST_FILENAME)
 #    if not match:
 #      match = re.match("^()(.+?)\.([^\./]+)$", self.DEST_FILENAME)
@@ -193,17 +196,17 @@ class EmbeddingGroupFinder:
 
   emb_indices = None
   emb_weights = None
-  
+
   def pick_emb(self):
 #    if self.USE_SORT_WEIGHTINGS == True:
     return np.random.choice(self.emb_indices, size=1, p=self.emb_weights)[0]
 #    else:
 #      return random.randint(0, len(self.all_embs) - 1)
-  
-  
+
+
   torch_cos = torch.nn.CosineSimilarity(dim=0, eps=1e-6)
-  
-  
+
+
   def emb_difference(self, a, b):
     return 1 - float(self.torch_cos(a, b))
 
@@ -211,25 +214,25 @@ class EmbeddingGroupFinder:
   def magnitude(self, weights):
     return torch.linalg.norm(weights)
 
-  
+
   def find_near_embs(self, a):
     list = [ (self.emb_difference(self.orig_all_embs[emb_id], a), emb_id) for emb_id in range(len(self.orig_all_embs)) ]
     list.sort()
     return np.array([idx for score, idx in list[:self.NEAREST_EMB_COUNT]], dtype=np.int32)
 
-  
+
   def get_group_vec(self, weights, emb_group):
     w = torch.unsqueeze(torch.Tensor(weights).to(self.DEVICE), dim=-1)
     tensor_list = w * emb_group
     return torch.sum(tensor_list, dim=0)
 
-  
+
   def difference_from_target_emb(self, weights):
     w = torch.unsqueeze(torch.Tensor(weights).to(self.DEVICE), dim=-1)
     tensor_list = w * self.new_emb_group_deref
     group_vec = torch.sum(tensor_list, dim=0)
     return (1 - float(self.torch_cos(group_vec, self.target_emb)))
-  
+
 
   def time_str(self):
     return "\r %0.1f%% " % min(100, (100 * (time.time() - self.start_time) / (self.end_time - self.start_time)))
@@ -238,7 +241,7 @@ class EmbeddingGroupFinder:
   def print_best(self, best_emb_groups_list, partial=False):
     if best_emb_groups_list is None:
       return
-    
+
     for best_emb_groups, iterations in best_emb_groups_list:
       if best_emb_groups is None:
         continue
@@ -263,7 +266,7 @@ class EmbeddingGroupFinder:
         self.textbox += f"target_emb: {self.target_emb.detach().numpy()}\n"
         self.textbox += f"difference: {((group_vec - self.target_emb) / rel_diff).detach().numpy()}\n\n\n"
       self.textbox += "-------------------------------------------------------------------------------------------------------\n\n"
-  
+
 
   target_emb = None
   sorted_to_orig = {}
@@ -276,7 +279,7 @@ class EmbeddingGroupFinder:
     self.TARGET_FILENAME = filename
     textbox += f"\n\nLoading target '{filename}'... "
     try:
-      if egf.LOAD_ON_CPU:
+      if EmbeddingGroupFinder.LOAD_ON_CPU:
         models = torch.load(self.TARGET_FILENAME, map_location=torch.device('cpu'))
       else:
         models = torch.load(self.TARGET_FILENAME)
@@ -285,18 +288,18 @@ class EmbeddingGroupFinder:
       return textbox
     try:			# If it's a PT file, it may look something like the below.
       models = models['string_to_param']['*']
-      if egf.LOAD_ON_CPU:
+      if EmbeddingGroupFinder.LOAD_ON_CPU:
         models = [ i.float() for i in models ]
     except (KeyError, TypeError):	# Well, try whatever key exists... a .bin example looks like this:
       models = models[list(models.keys())[0]]
-      if egf.LOAD_ON_CPU:
+      if EmbeddingGroupFinder.LOAD_ON_CPU:
         models = models.float()	# Can't use half-precision on CPU.
-      models = [ models ]        
+      models = [ models ]
     self.set_targets(models)
     textbox += "loaded.\n"
     return textbox
 
-  
+
   def set_targets(self, t):
     self.target_embs = t
 
@@ -304,14 +307,14 @@ class EmbeddingGroupFinder:
   def set_target(self, t):
     self.target_emb = t
     self.target_emb_mag = self.magnitude(self.target_emb)
-    
-  
+
+
 #  def set_dest_filename(self, f):
 #    self.DEST_FILENAME = f
 
 
   EMBEDDING_FILENAME = ""
-#  
+#
 #  def load_embeddings(self, filename):
 #    self.EMBEDDING_FILENAME = filename
 #    if self.LOAD_ON_CPU:
@@ -338,6 +341,7 @@ class EmbeddingGroupFinder:
         self.textbox += f"ERROR: could not find token '{t}' or '{t + '</w>'}'\n\n"
         self.textbox += "Suggested possibilities:\n"
         found = False
+        token_encoder = self.tokenizer.get_vocab()
         sorted_keys = sorted(token_encoder.keys())
         for i in range(len(t)-1, -1, -1):
           t2 = t[:i]
@@ -372,14 +376,14 @@ class EmbeddingGroupFinder:
     self.EMBEDDING_FILENAME = self.EMBEDDING_BASEDIR + "%08X.hash" % embedding_hash
 
     self.load_near_emb_cache()
-    
+
 
 
   def load_required_tokens(self):
     self.required_tokens = [ [ self.encode_token(i) for i in j ] for j in self.REQUIRED_TOKENS_TEXT ]
     self.required_tokens_flattened = [item for sublist in self.required_tokens for item in sublist]
 
-    
+
   def load_optional_tokens(self):
     self.optional_tokens = [ self.encode_token(i) for i in self.OPTIONAL_TOKENS_TEXT ]
 
@@ -399,7 +403,7 @@ class EmbeddingGroupFinder:
     self.NEAR_EMB_ODDS = random.random() ** (0.5 / self.MAX_SIMILAR_EMBS)
     self.OPTIONAL_EMB_ODDS = (0.65 + 0.35 * random.random())  ** (10 / self.MAX_SIMILAR_EMBS)
     self.SPECIFIC_GROUP_ODDS = random.random()
-    
+
 
   def new_optimize_rec(self, key, score_improvement, time_since_last):
     if key not in self.optimization_records:
@@ -445,12 +449,12 @@ class EmbeddingGroupFinder:
         self.textbox += "*/t=%0.7f (%s), #=%d, t=%0.1f\n" % (rec[0], key, rec[1], rec[2])
       self.textbox += "\n"
       self.last_printed_optimization_time = cur_time
-        
+
   # ------------------
-    
+
   start_time = None
   end_time = None
-  
+
   best_emb_groups = None
   near_emb_cache = None
   iterations = None
@@ -461,10 +465,10 @@ class EmbeddingGroupFinder:
   solve_groups = []
   total_iterations = 0
   tokenizer = None
-  
+
   def solve(self):
     global SHOW_NUM_MIX
-    
+
     self.MAX_SIMILAR_EMBS = SHOW_NUM_MIX
     self.do_breakout = False
     self.do_interrupt = False
@@ -473,7 +477,7 @@ class EmbeddingGroupFinder:
     self.tokenizer, internal_embs, loaded_embs = get_data()
     self.set_embeddings(self.internal_embs)
     internal_embs = loaded_embs = None
-    
+
 #    if not self.do_resume:
     self.solve_ret = []
     self.solve_groups = []
@@ -484,7 +488,7 @@ class EmbeddingGroupFinder:
     while self.emb_id < len(self.target_embs):
       t = self.target_embs[self.emb_id]
       self.textbox += f"\n === Embedding # {self.emb_id+1} / {len(self.target_embs)} === \n\n"
-      
+
 #      if not self.do_resume:
       self.set_target(t)
       self.best_emb_groups = None
@@ -496,10 +500,10 @@ class EmbeddingGroupFinder:
 
       self.all_embs = copy.deepcopy(self.orig_all_embs)
       tmp_emb_mapping = torch.Tensor( [i for i in range(len(self.orig_all_embs))] ).int().to(self.DEVICE)
-  
+
       removed = len(self.all_embs)
       empty_mask = torch.all(self.all_embs == 0, axis=1)
-  
+
       self.all_embs = self.all_embs[~empty_mask]
       tmp_emb_mapping = tmp_emb_mapping[~empty_mask]
       removed -= len(self.all_embs)
@@ -536,7 +540,7 @@ class EmbeddingGroupFinder:
           l.append( (beg_tuple[2][i][0].detach().numpy(), beg_tuple[2][i][1], beg_tuple[2][i][2]) )
         beg_tuple[2] = l
         best_emb_groups = [[tuple(beg_tuple)]]
-  
+
         self.solve_ret.append( (best_emb_groups, iterations) )
         self.solve_groups.append(best_emb_groups[-1][0][1].detach())
       else:
@@ -544,7 +548,7 @@ class EmbeddingGroupFinder:
         self.solve_groups.append(None)
 
       self.total_iterations += iterations
-         
+
       self.emb_id += 1
 
       if self.do_breakout:
@@ -552,29 +556,29 @@ class EmbeddingGroupFinder:
 
 #    self.save_best(self.solve_groups, self.total_iterations)
     self.print_best(self.solve_ret, self.iterations)
-    
+
     self.do_breakout = True
 
     return self.solve_ret
-      
-  
+
+
   def solve_one(self):
     if self.best_emb_groups is None:
       self.best_emb_groups = [ [] for i in range(self.MAX_SIMILAR_EMBS) ]
       self.iterations = 0
       self.last_best_score = 1e50
-    
+
     if self.near_emb_cache is None:
       self.near_emb_cache = [ [] for i in range(len(self.orig_all_embs)) ]
-    
+
     if self.history is None:
       self.history = OrderedDict()
-    
+
     self.do_interrupt = False
 
     self.start_time = time.time()
     self.end_time = self.start_time + self.RUNTIME
-    
+
     to_precache = []
     if self.DO_PRECACHE:
       for i in range(len(self.near_emb_cache)):
@@ -582,13 +586,13 @@ class EmbeddingGroupFinder:
           to_precache.append(i)
       if len(to_precache) > 0:
         self.textbox += "Precaching neighbors...\n"
-    
+
     self.textbox += "\n"
-    
+
     while time.time() < self.end_time and self.iterations < self.MAXITER and self.do_breakout == False and self.do_interrupt == False:
       self.textbox += self.time_str() + "                                           \r"
       last_time = time.time()
-      
+
       if self.do_printout == True:
         self.do_printout = False
         self.print_best([(self.best_emb_groups, self.iterations)])
@@ -608,16 +612,16 @@ class EmbeddingGroupFinder:
           self.save_near_emb_cache()
           self.last_save_near_emb_time = last_time
         continue
-      
+
       if self.iterations % self.SUCCESSIVE_OPTIMIZATION_RUNS == 0:
         self.select_optimization_methodology()
-      
+
 #      time_since_save_state = last_time - self.last_save_state_time
 #      if time_since_save_state > self.SAVE_FREQUENCY and self.iterations != 0:
 #        self.textbox += self.time_str() + f"<Saving state>                        \r"
 #        self.save_state()
 #        self.last_save_state_time = last_time
-      
+
       cur_embs_per_group = min(self.MAX_EMBS_PER_GROUP, round(self.MAX_SIMILAR_EMBS * self.MULTIPLIER_LIST[0]))
       embs_thusfar = 0
 
@@ -674,7 +678,7 @@ class EmbeddingGroupFinder:
             new_emb_group[embs_thusfar] = choice
             embs_thusfar += 1
             break
-  
+
       # Fill the rest up with random embeddings.
       while embs_thusfar < cur_embs_per_group:
         for j in range(10000):
@@ -699,7 +703,7 @@ class EmbeddingGroupFinder:
       self.history[new_emb_tuple] = None
       if len(self.history) > self.MAX_HISTORY:
         self.history.popitem(last=False)
-    
+
       self.textbox += self.time_str() + f"<Dereferencing embedding group>                        \r"
       # Dereference the embedding indices for speed in the optimization loop.
       self.new_emb_group_deref = torch.zeros([cur_embs_per_group, self.EMB_LENGTH])
@@ -707,10 +711,10 @@ class EmbeddingGroupFinder:
         new_weights = torch.Tensor([(1 / cur_embs_per_group) ** 0.5 * random.choice([-1,1])] * cur_embs_per_group).to(self.DEVICE)
       else:
         new_weights = np.array([(1 / cur_embs_per_group) ** 0.5 * random.choice([-1,1])] * cur_embs_per_group)
-    
+
       for i in range(cur_embs_per_group):
         self.new_emb_group_deref[i] = self.all_embs[new_emb_tuple[i]]
-    
+
 
       # Progressively shrink down the list of embeddings under consideration.
       emb_count_list = [round(self.MAX_SIMILAR_EMBS * i) for i in self.MULTIPLIER_LIST] + list(range(self.MAX_SIMILAR_EMBS - 1, 0, -1))
@@ -723,14 +727,14 @@ class EmbeddingGroupFinder:
         else:
           if cur_embs_per_group < self.MAX_SIMILAR_EMBS:
             break
-    
+
         # Calculate the optimal weights for this set of self.all_embs.
         self.textbox += self.time_str() + f"<Running optimization loop, {self.METHOD}, {len(new_weights)} entries>                             \r"
         result = scipy.optimize.minimize(self.difference_from_target_emb, new_weights, tol=5e-3, method=self.METHOD, options={"maxiter": max(self.MIN_OPT_ITER, min(self.MAX_OPT_ITER, round(self.OPT_SCALAR / (cur_embs_per_group ** 0.5))))})
         new_weights = result.x
         score = result.fun
         self.textbox += self.time_str() + f"<Storing best results>                             \r"
-        
+
         # Pick the most relevant embeddings in the group, eliminate the rest, then recalculate weights for the smaller group. Start with sorting by weights.
         next_embs_per_group = emb_count_list[emb_count_id + 1]
         composite = [ (new_weights[i], new_emb_tuple[i], self.sorted_to_orig[new_emb_tuple[i]]) for i in range(len(new_emb_tuple)) ]
@@ -761,17 +765,17 @@ class EmbeddingGroupFinder:
               subset = composite_sort[-next_embs_per_group:]
               failed_narrowdown = False
               break
-          
+
           if failed_narrowdown:
             break
-          
+
         else:
           subset = composite[-next_embs_per_group:]
 
         self.history[subset_tuple] = None
         if len(self.history) > self.MAX_HISTORY:
           self.history.popitem(last=False)
-        
+
         # Before any elimination, though, store the best results, for each possible number of component embeddings.
         if cur_embs_per_group <= self.MAX_SIMILAR_EMBS:
           group_vec = self.get_group_vec(new_weights, self.new_emb_group_deref)
@@ -791,7 +795,7 @@ class EmbeddingGroupFinder:
           self.best_emb_groups[cur_embs_per_group - 1] = self.best_emb_groups[cur_embs_per_group - 1][:self.BEST_EMB_GROUPS]	# Keep only the best
 
         self.textbox += self.time_str() + f"<Preparing for next test>                             \r"
-    
+
         # Prepare the next group of embeddings to test.
         composite = subset
 #        composite = composite[-next_embs_per_group:]
@@ -802,10 +806,10 @@ class EmbeddingGroupFinder:
           new_weights = torch.Tensor([ weights for weights, emb_group, mapped_emb_group in composite]).to(self.DEVICE)
         else:
           new_weights = np.array([ weights for weights, emb_group, mapped_emb_group in composite])
-    
+
         for i in range(next_embs_per_group):
           self.new_emb_group_deref[i] = self.all_embs[new_emb_group[i]]
-    
+
       if failed_narrowdown:
         continue
 
@@ -824,16 +828,13 @@ class EmbeddingGroupFinder:
 #          self.save_best([self.best_emb_groups[self.MAX_SIMILAR_EMBS - 1][0][1]], iterations=self.iterations, score = best_score)
 
       self.last_best_score = best_score
-    
+
       self.iterations += 1
 
     self.textbox += self.time_str() + f"<Exiting loop>                             \r"
     self.do_interrupt = False
 #    self.save_state()
     self.save_near_emb_cache()
-    
+
     self.textbox += self.time_str() + f"<Run complete>                             \r"
     return self.best_emb_groups, self.iterations
-
-
-

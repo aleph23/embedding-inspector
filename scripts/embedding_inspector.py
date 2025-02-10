@@ -13,14 +13,14 @@ import math, rand
 from scripts.embedding_solver import EmbeddingGroupFinder
 
 MAX_TABS = 20	# max number of tokens to save per embedding.
-MAX_NUM_MIX = 100 # number of tokens that can be mixed to make a new token.
+MAX_NUM_MIX = 50 # number of tokens that can be mixed to make a new token.
 SHOW_NUM_MIX = 6 # number of mixer lines to show initially
 MAX_SIMILAR_EMBS = 30 # number of similar tokens to show
-VEC_SHOW_TRESHOLD = 1 # change to 10000 to see all values
-VEC_SHOW_PROFILE = 'default' #change to 'full' for more precision
+VEC_SHOW_TRESHOLD = 10 # change to 10000 to see all values
+VEC_SHOW_PROFILE = 'full' #change to 'full' for more precision
 SEP_STR = '-'*80 # separator string
 
-SHOW_SIMILARITY_SCORE = False # change to True to enable
+SHOW_SIMILARITY_SCORE = True # change to True to enable
 
 ENABLE_GRAPH = True
 GRAPH_VECTOR_LIMIT = 8 # max number of vectors to draw in graph
@@ -29,19 +29,16 @@ REMOVE_ZEROED_VECTORS = True #optional
 
 EVAL_PRESETS = ['None','',
     'Boost','=v*8',
-    'Digitize','=math.ceil(v*8)/8',
+    'BoostLt','=v*4',
+    'Digitize','=math.ceil(v*8)/4',
     'Binary','=(1*(v>=0)-1*(v<0))/50',
-    'Randomize','=v*random.random()',
     'Sine','=v*math.sin(i/maxi*math.pi)',
     'Comb','=v*((i%2)==0)',
     'Crop_high','=v*(i<maxi//2)',
     'Crop_low','=v*(i>=maxi//2)'
     ]
 
-# ==============================================================================
 
-
-#-------------------------------------------------------------------------------
 
 def get_data():
 
@@ -80,7 +77,6 @@ def text_to_emb_ids(text, tokenizer):
 
     return emb_ids # return list of embedding IDs for text
 
-#-------------------------------------------------------------------------------
 
 def emb_id_to_name(emb_id, tokenizer):
 
@@ -94,7 +90,6 @@ def emb_id_to_name(emb_id, tokenizer):
 
     return emb_name # return embedding name for embedding ID
 
-#-------------------------------------------------------------------------------
 
 def get_embedding_info(text):
 
@@ -138,7 +133,6 @@ def get_embedding_info(text):
 
     return emb_name, emb_id, emb_vec, None # return embedding name, ID, vector
 
-#-------------------------------------------------------------------------------
 
 def score_to_percent(score):
     if score>1.0:score=1.0
@@ -240,7 +234,6 @@ def do_inspect(text):
 
     return '\n'.join(results), saved_graph # return info string to results textbox and graph
 
-#-------------------------------------------------------------------------------
 
 def do_save_vector(text, fnam):
 
@@ -327,7 +320,7 @@ def do_save(*args):
                     results.append('! Vector size is not compatible, skipping '+emb_name+'('+str(emb_id)+')')
 
                     continue
-            
+
             if not(concat_mode):
                 if tot_vec==None:
                     tot_vec = torch.zeros(vec_size).unsqueeze(0)
@@ -346,8 +339,7 @@ def do_save(*args):
                     tot_vec = mix_vec*mixval
 
                 else:
-
-                   tot_vec = torch.cat([tot_vec,mix_vec*mixval])
+                    tot_vec = torch.cat([tot_vec,mix_vec*mixval])
                 results.append('> '+emb_name+'('+str(emb_id)+')'+' x '+str(mixval))
 
         # save the mixed embedding
@@ -397,7 +389,7 @@ def do_save(*args):
         if tot_vec.shape[0]>0:
             if tot_vec.shape[0]>75:
                 results.append('⚠️WARNING: vector count>75, it may not work 🛑')
-            new_emb = Embedding(tot_vec_list, save_name)
+            new_emb = Embedding(tot_vec, save_name)
             if (step_val!=None):
                 new_emb.step = step_val
                 results.append('Setting step value to '+str(step_val))
@@ -450,7 +442,6 @@ def fig2img(fig):
     buf.close()
     return img
 
-#-------------------------------------------------------------------------------
 
 def do_listloaded():
 
@@ -479,7 +470,6 @@ def do_listloaded():
 
     return '\n'.join(results)  # return info string to textbox
 
-#-------------------------------------------------------------------------------
 
 def do_minitokenize(*args):
 
@@ -503,8 +493,7 @@ def do_minitokenize(*args):
         embstr = emb_id_to_name(found_ids[i],tokenizer)
         results.append(embstr+' '+idstr+'  ')
         if (mini_sendtomix==True):
-            if (i<MAX_NUM_MIX):
-                mix_inputs_list[i]=idstr
+            if (i<MAX_NUM_MIX): mix_inputs_list[i]=idstr
 
     if (mini_sendtomix==True):
         concat_mode = True
@@ -515,7 +504,6 @@ def do_minitokenize(*args):
 
     return *mix_inputs_list,concat_mode,combine_mode,' '.join(results)# return everything
 
-#-------------------------------------------------------------------------------
 
 def do_reset(*args):
 
@@ -524,7 +512,6 @@ def do_reset(*args):
 
     return *mix_inputs_list, *mix_slider_list
 
-#-------------------------------------------------------------------------------
 
 def do_eval_preset(*args):
 
@@ -538,7 +525,6 @@ def do_eval_preset(*args):
 
     return result
 
-#-------------------------------------------------------------------------------
 
 def add_tab():
 
@@ -566,7 +552,6 @@ def add_tab():
                             mini_tokenize = gr.Button(value="Tokenize", variant="primary")
                             mini_sendtomix = gr.Checkbox(value=False, label="Send IDs to mixer")
                         mini_result = gr.Textbox(label="Tokens", lines=1)
-
 
                 with gr.Column(variant='panel'):
                     with gr.Row():
@@ -633,11 +618,9 @@ def add_tab():
             presets_dropdown.change(do_eval_preset,inputs=presets_dropdown,outputs=eval_box)
 
             save_vector_button.click(fn=do_save_vector,inputs = [text_input, save_vector_name])
-            
+
     return [(ui, "Embedding Inspector", "inspector")]
 
-
-# ==================================================
 
 egf = EmbeddingGroupFinder()
 
