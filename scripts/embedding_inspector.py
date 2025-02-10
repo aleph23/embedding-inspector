@@ -39,7 +39,6 @@ EVAL_PRESETS = ['None','',
     ]
 
 
-
 def get_data():
 
     loaded_embs = sd_hijack.model_hijack.embedding_db.word_embeddings
@@ -60,7 +59,6 @@ def get_data():
 
     return tokenizer, internal_embs, loaded_embs # return these useful references
 
-#-------------------------------------------------------------------------------
 
 def text_to_emb_ids(text, tokenizer):
 
@@ -402,8 +400,6 @@ def do_save(*args):
             except:
                 results.append('🛑 Error saving "'+save_filename+'" (filename might be invalid)')
 
-            #------------- end batch loop
-
 
     if anything_saved==True:
 
@@ -582,8 +578,6 @@ def add_tab():
                                             with gr.Column():
                                                 mix_sliders.append(gr.Slider(label="Multiplier",value=1.0,minimum=-1.0, maximum=1.0, step=0.1))
 
-
-
                     with gr.Row():
                             with gr.Column():
                                 concat_mode = gr.Checkbox(value=False,label="Concat mode")
@@ -620,7 +614,6 @@ def add_tab():
             save_vector_button.click(fn=do_save_vector,inputs = [text_input, save_vector_name])
 
     return [(ui, "Embedding Inspector", "inspector")]
-
 
 egf = EmbeddingGroupFinder()
 

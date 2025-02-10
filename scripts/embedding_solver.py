@@ -1,13 +1,13 @@
 import numpy as np
-from scripts import embedding_inspector
+# from scripts import embedding_inspector
 from scripts.embedding_inspector import emb_id_to_name, get_data, text_to_emb_ids
 import torch
-import scipy
+import scipy.optimize
 
-from scipy.optimize import minimize
 from collections import OrderedDict
 import random, math, time, re, pickle, copy
 import json
+
 
 class EmbeddingGroupFinder:
 
@@ -48,7 +48,7 @@ class EmbeddingGroupFinder:
 
   BEST_EMB_GROUPS = 1000
   NEAREST_EMB_COUNT = 50
-  PRINT_DURING_CALC = False
+  PRINT_DURING_CALC = True
 
 #  DEST_FILENAME = None
   REQUIRED_TOKENS_TEXT = []
@@ -75,11 +75,10 @@ class EmbeddingGroupFinder:
 #    "METHOD": ["Nelder-Mead", "Powell", "CG", "BFGS", "L-BFGS-B", "TNC", "COBYLA", "SLSQP"]
   }
 
-
   do_interrupt = False
   do_breakout = True
   do_skip = False
-  do_printout = False
+  do_printout = True
   textbox = ""
   mix_inputs = []
   mix_sliders = []
@@ -450,7 +449,6 @@ class EmbeddingGroupFinder:
       self.textbox += "\n"
       self.last_printed_optimization_time = cur_time
 
-  # ------------------
 
   start_time = None
   end_time = None
