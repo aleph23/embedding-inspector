@@ -664,7 +664,7 @@ class EmbeddingGroupFinder:
               self.textbox += self.time_str() + "<Saving emb cache>                        \r"
               self.save_near_emb_cache()
               self.last_save_near_emb_time = last_time
-            self.textbox += self.time_str() + f"<Creating embedding group>                        \r"
+            self.textbox += self.time_str() + "<Creating embedding group>                        \r"
           for k in range(100):				# Up to 100 tries to find something that's not already there.
             mapped_choice = random.choice(self.near_emb_cache[idx])
             try:
