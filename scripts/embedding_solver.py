@@ -602,7 +602,7 @@ class EmbeddingGroupFinder:
         self.near_emb_cache[to_precache[0]] = self.find_near_embs(self.orig_all_embs[to_precache[0]])
         to_precache = to_precache[1:]
         if len(to_precache) == 0:
-          self.textbox += self.time_str() + f"<Precaching complete!>                        \r"
+          self.textbox += self.time_str() + "<Precaching complete!>                        \r"
           self.save_near_emb_cache()
           self.textbox += "\n"
         elif last_time - self.last_save_near_emb_time > self.SAVE_FREQUENCY:
