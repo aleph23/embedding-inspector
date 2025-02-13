@@ -17,7 +17,7 @@ MAX_NUM_MIX = 50 # number of tokens that can be mixed to make a new token.
 SHOW_NUM_MIX = 6 # number of mixer lines to show initially
 MAX_SIMILAR_EMBS = 30 # number of similar tokens to show
 VEC_SHOW_TRESHOLD = 10 # change to 10000 to see all values
-VEC_SHOW_PROFILE = 'full' #change to 'full' for more precision
+VEC_SHOW_PROFILE = 'full' #change to 'default' for less precision
 SEP_STR = '-'*80 # separator string
 
 SHOW_SIMILARITY_SCORE = True # change to True to enable
@@ -25,7 +25,8 @@ SHOW_SIMILARITY_SCORE = True # change to True to enable
 ENABLE_GRAPH = True
 GRAPH_VECTOR_LIMIT = 8 # max number of vectors to draw in graph
 ENABLE_SHOW_CHECKSUM = False #slows down listing loaded embeddings
-REMOVE_ZEROED_VECTORS = True #optional
+REMOVE_ZEROED_VECTORS = False #optional
+EMB_SAVE_EXT = '.pt' #'.bin'
 
 EVAL_PRESETS = ['None','',
     'Boost','=v*8',
@@ -41,7 +42,12 @@ EVAL_PRESETS = ['None','',
 
 def get_data():
 
-    loaded_embs = sd_hijack.model_hijack.embedding_db.word_embeddings
+    loaded_embs = collections.OrderedDict(
+        sorted(
+            sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
+            key=lambda x: str(x[0]).lower()
+        )
+    )
 
     embedder = shared.sd_model.cond_stage_model.wrapped
     if embedder.__class__.__name__=='FrozenCLIPEmbedder': # SD1.x detected
@@ -162,6 +168,8 @@ def do_inspect(text):
         results.append('Step: '+str(loaded_emb.step))
         results.append('SD checkpoint: '+str(loaded_emb.sd_checkpoint))
         results.append('SD checkpoint name: '+str(loaded_emb.sd_checkpoint_name))
+        if hasattr(loaded_emb, 'filename'):
+            results.append('Filename: '+str(loaded_emb.filename))
 
     vec_count = emb_vec.shape[0]
     vec_size = emb_vec.shape[1]
@@ -283,7 +291,7 @@ def do_save(*args):
             preset_name = '_'+EVAL_PRESETS[preset_no*2]
             eval_txt = EVAL_PRESETS[preset_no*2+1]
 
-        save_filename = os.path.join(cmd_opts.embeddings_dir, save_name+preset_name+'.bin')
+        save_filename = os.path.join(cmd_opts.embeddings_dir, save_name+preset_name+EMB_SAVE_EXT)
         file_exists = os.path.exists(save_filename)
         if (file_exists):
             if not(enable_overwrite):
