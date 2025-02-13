@@ -623,7 +623,7 @@ class EmbeddingGroupFinder:
       cur_embs_per_group = min(self.MAX_EMBS_PER_GROUP, round(self.MAX_SIMILAR_EMBS * self.MULTIPLIER_LIST[0]))
       embs_thusfar = 0
 
-      self.textbox += self.time_str() + f"<Creating embedding group>                        \r"
+      self.textbox += self.time_str() + "<Creating embedding group>                        \r"
       new_emb_group = np.full((cur_embs_per_group,), -1, dtype=np.int32)
       for requirement_options in self.required_tokens:
         new_emb_group[embs_thusfar] = random.choice(requirement_options)
