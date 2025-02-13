@@ -562,7 +562,7 @@ def add_tab():
 
                     with gr.Tabs(elem_id="tabGroup"):
                         for tab_id in range(MAX_TABS):
-                            with gr.TabItem(f"tab {tab_id}", id=f"{tab_id}", lem_id="tabGroup.{tab_id}"):
+                            with gr.TabItem(f"tab {tab_id}", id=f"{tab_id}", lem_id=f"tabGroup.{tab_id}"):
                               with gr.Row():
                                   for n in range(SHOW_NUM_MIX):
                                     with gr.Column():
