@@ -829,7 +829,7 @@ class EmbeddingGroupFinder:
 
       self.iterations += 1
 
-    self.textbox += self.time_str() + f"<Exiting loop>                             \r"
+    self.textbox += self.time_str() + "<Exiting loop>                             \r"
     self.do_interrupt = False
 #    self.save_state()
     self.save_near_emb_cache()
