@@ -702,7 +702,7 @@ class EmbeddingGroupFinder:
       if len(self.history) > self.MAX_HISTORY:
         self.history.popitem(last=False)
 
-      self.textbox += self.time_str() + f"<Dereferencing embedding group>                        \r"
+      self.textbox += self.time_str() + "<Dereferencing embedding group>                        \r"
       # Dereference the embedding indices for speed in the optimization loop.
       self.new_emb_group_deref = torch.zeros([cur_embs_per_group, self.EMB_LENGTH])
       if self.WEIGHTS_AS_TENSOR:
