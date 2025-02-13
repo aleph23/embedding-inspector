@@ -834,5 +834,5 @@ class EmbeddingGroupFinder:
 #    self.save_state()
     self.save_near_emb_cache()
 
-    self.textbox += self.time_str() + f"<Run complete>                             \r"
+    self.textbox += self.time_str() + "<Run complete>                             \r"
     return self.best_emb_groups, self.iterations
