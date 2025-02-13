@@ -591,7 +591,7 @@ class EmbeddingGroupFinder:
       self.textbox += self.time_str() + "                                           \r"
       last_time = time.time()
 
-      if self.do_printout == True:
+      if self.do_printout is True:
         self.do_printout = False
         self.print_best([(self.best_emb_groups, self.iterations)])
 #        self.save_state()
