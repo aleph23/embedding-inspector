@@ -121,7 +121,7 @@ class EmbeddingGroupFinder:
 
 
   def save_near_emb_cache(self):
-    with open(self.EMBEDDING_FILENAME + ".near", "wb") as outfile:
+    with open(f"{self.EMBEDDING_FILENAME}.near", "wb") as outfile:
       pickle.dump(self.near_emb_cache, outfile)
 
 
