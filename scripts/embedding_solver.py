@@ -215,9 +215,9 @@ class EmbeddingGroupFinder:
 
 
   def find_near_embs(self, a):
-    list = [ (self.emb_difference(self.orig_all_embs[emb_id], a), emb_id) for emb_id in range(len(self.orig_all_embs)) ]
-    list.sort()
-    return np.array([idx for score, idx in list[:self.NEAREST_EMB_COUNT]], dtype=np.int32)
+    neighbor = [(self.emb_difference(self.orig_all_embs[emb_id], a), emb_id) for emb_id in range(len(self.orig_all_embs))]
+    neighbor.sort()
+    return np.array([idx for score, idx in neighbor[:self.NEAREST_EMB_COUNT]], dtype=np.int32)
 
 
   def get_group_vec(self, weights, emb_group):
@@ -377,7 +377,6 @@ class EmbeddingGroupFinder:
     self.load_near_emb_cache()
 
 
-
   def load_required_tokens(self):
     self.required_tokens = [ [ self.encode_token(i) for i in j ] for j in self.REQUIRED_TOKENS_TEXT ]
     self.required_tokens_flattened = [item for sublist in self.required_tokens for item in sublist]
@@ -449,7 +448,6 @@ class EmbeddingGroupFinder:
       self.textbox += "\n"
       self.last_printed_optimization_time = cur_time
 
-
   start_time = None
   end_time = None
 
@@ -458,7 +456,7 @@ class EmbeddingGroupFinder:
   iterations = None
   last_best_score = None
   history = None
-  emb_id = 0
+  emb_id = 0        
   solve_ret = []
   solve_groups = []
   total_iterations = 0
