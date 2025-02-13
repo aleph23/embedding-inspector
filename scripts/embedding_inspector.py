@@ -388,7 +388,7 @@ def do_save(*args):
             if tot_vec.shape[0]>75:
                 results.append('⚠️WARNING: vector count>75, it may not work 🛑')
             new_emb = Embedding(tot_vec, save_name)
-            if (step_val!=None):
+            if (step_val is not None):
                 new_emb.step = step_val
                 results.append('Setting step value to '+str(step_val))
 
