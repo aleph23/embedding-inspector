@@ -731,7 +731,7 @@ class EmbeddingGroupFinder:
         result = scipy.optimize.minimize(self.difference_from_target_emb, new_weights, tol=5e-3, method=self.METHOD, options={"maxiter": max(self.MIN_OPT_ITER, min(self.MAX_OPT_ITER, round(self.OPT_SCALAR / (cur_embs_per_group ** 0.5))))})
         new_weights = result.x
         score = result.fun
-        self.textbox += self.time_str() + f"<Storing best results>                             \r"
+        self.textbox += self.time_str() + "<Storing best results>                             \r"
 
         # Pick the most relevant embeddings in the group, eliminate the rest, then recalculate weights for the smaller group. Start with sorting by weights.
         next_embs_per_group = emb_count_list[emb_count_id + 1]
