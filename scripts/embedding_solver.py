@@ -587,7 +587,7 @@ class EmbeddingGroupFinder:
 
     self.textbox += "\n"
 
-    while time.time() < self.end_time and self.iterations < self.MAXITER and self.do_breakout == False and self.do_interrupt == False:
+    while time.time() < self.end_time and self.iterations < self.MAXITER and self.do_breakout is False and self.do_interrupt is False:
       self.textbox += self.time_str() + "                                           \r"
       last_time = time.time()
 
