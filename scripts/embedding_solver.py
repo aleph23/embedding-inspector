@@ -365,7 +365,7 @@ class EmbeddingGroupFinder:
   def set_embeddings(self, e):
     if self.target_embs is None:
       self.textbox += "ERROR: Target should be set before embeddings are provided.\n"
-      raise RuntimeError(f"Target should be set before embeddings are provided")
+      raise RuntimeError("Target should be set before embeddings are provided")
 
     self.EMB_LENGTH = len(e[0])
     self.all_embs = e
