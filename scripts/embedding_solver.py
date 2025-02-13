@@ -792,7 +792,7 @@ class EmbeddingGroupFinder:
           self.best_emb_groups[cur_embs_per_group - 1].sort(key=lambda x: x[0])			# Sort by score
           self.best_emb_groups[cur_embs_per_group - 1] = self.best_emb_groups[cur_embs_per_group - 1][:self.BEST_EMB_GROUPS]	# Keep only the best
 
-        self.textbox += self.time_str() + f"<Preparing for next test>                             \r"
+        self.textbox += self.time_str() + "<Preparing for next test>                             \r"
 
         # Prepare the next group of embeddings to test.
         composite = subset
