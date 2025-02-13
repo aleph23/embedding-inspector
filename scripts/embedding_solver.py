@@ -661,7 +661,7 @@ class EmbeddingGroupFinder:
             self.textbox += self.time_str() + f"<Finding neighbors to {idx} -> {emb_id_to_name(idx, self.tokenizer)}>                        \r"
             self.near_emb_cache[idx] = self.find_near_embs(self.orig_all_embs[idx])
             if last_time - self.last_save_near_emb_time > self.SAVE_FREQUENCY:
-              self.textbox += self.time_str() + f"<Saving emb cache>                        \r"
+              self.textbox += self.time_str() + "<Saving emb cache>                        \r"
               self.save_near_emb_cache()
               self.last_save_near_emb_time = last_time
             self.textbox += self.time_str() + f"<Creating embedding group>                        \r"
