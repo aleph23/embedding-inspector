@@ -606,7 +606,7 @@ class EmbeddingGroupFinder:
           self.save_near_emb_cache()
           self.textbox += "\n"
         elif last_time - self.last_save_near_emb_time > self.SAVE_FREQUENCY:
-          self.textbox += self.time_str() + f"<Saving emb cache>                        \r"
+          self.textbox += self.time_str() + "<Saving emb cache>                        \r"
           self.save_near_emb_cache()
           self.last_save_near_emb_time = last_time
         continue
