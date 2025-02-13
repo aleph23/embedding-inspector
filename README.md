@@ -8,7 +8,7 @@ Inspired by [Embeddings editor](https://github.com/CodeExplode/stable-diffusion-
 
 # What's new
 
-v2.0: SD2.0 and multi-vector support 
+v2.0: SD2.0 and multi-vector support
 
 v2.1: Entering embedding ID instead of name is now supported, for example you can enter "#2368" instead of "cat"
 
@@ -38,13 +38,15 @@ v2.57 Added graph for inspected embedding, and button for saving the vector to t
 
 Added 'Eval presets' dropdown list, which lets you choose one of the 7 example eval strings, and 'Save for ALL presets' option (careful as this will save 8 embeddings, see screenshot at the bottom of this page).
 
-v2.8 Bugfix for saved embeddings not reloading issue. 
+v2.8 Bugfix for saved embeddings not reloading issue.
 
 Some terminology fixes in UI, and SHOW_SIMILARITY_SCORE as an option in script, default is False, change to = True to enable it.
 
-Increased number of mixer lines, click on arrow to show/hide more lines. 
+Increased number of mixer lines, click on arrow to show/hide more lines.
 
 Added 'Binary' eval preset, and made vec_mag, vec_min, vec_max variables available.
+
+v3.0 Merged in embedding solver. Can now find an optimal set of tokens that represents an existing embedding.
 
 # Manual Installation
 
@@ -70,7 +72,7 @@ Download ![embedding-inspector-main.zip](https://github.com/tkalayci71/embedding
 
 # Background information
 
-Stable Diffusion contains a database of ~49K words/tokens, and their numerical representations called embeddings. Your prompt is first tokenized using this database. For example, since the word "cat" is in the database it will be tokenized as a single item, but the word "catnip" is not in the database,  so will be tokenized as two items, "cat" and "nip". 
+Stable Diffusion contains a database of ~49K words/tokens, and their numerical representations called embeddings. Your prompt is first tokenized using this database. For example, since the word "cat" is in the database it will be tokenized as a single item, but the word "catnip" is not in the database,  so will be tokenized as two items, "cat" and "nip".
 
 New tokens/concepts can also be loaded from embeddings folder. They are usually created via textual inversion, or you can download some from [Stable Diffusion concepts library](https://huggingface.co/sd-concepts-library). With Embedding-inspector you can inspect and mix embeddings both from the internal database and the loaded database.
 
@@ -96,7 +98,7 @@ Eval " v/vec_mag" normalizes the vector (error if magnitude is zero)
 
 Eval " = torch.ceil(v)" rounds all values
 
-If the Eval string starts with "=", evaluation will be done item-wise. Here available variables are : v=original value, i=item no (0:768 or 0:1024), maxi=item count (768 or 1024), n=vector no, maxn=vector count. Also, original values can be accessed as tot_vec[n,i] 
+If the Eval string starts with "=", evaluation will be done item-wise. Here available variables are : v=original value, i=item no (0:768 or 0:1024), maxi=item count (768 or 1024), n=vector no, maxn=vector count. Also, original values can be accessed as tot_vec[n,i]
 
 
 Eval " = v * (i<100)" zeroes items after 100th
