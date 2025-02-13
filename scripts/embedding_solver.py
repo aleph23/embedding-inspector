@@ -257,7 +257,7 @@ class EmbeddingGroupFinder:
           self.mix_inputs.append(emb_id_to_name(int(mapped_emb_id), self.tokenizer))
           self.mix_sliders.append(weight)
           self.textbox += f" {weight} * {mapped_emb_id}: {emb_id_to_name(int(mapped_emb_id), self.tokenizer)}\n\n"
-        if partial == True:
+        if partial is True:
           return self.textbox + "---------------------------------\n\n"
         s = sorted(self.target_emb)
         rel_diff = s[int(0.75 * len(self.target_emb))] - s[int(0.25 * len(self.target_emb) )]
